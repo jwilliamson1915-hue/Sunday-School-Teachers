@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sunday School Teaching Schedule</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0b2f5b;
+    --navy-deep: #082244;
+    --sky: #4a90c2;
+    --sky-soft: #e4eef7;
+    --gold: #c49a3c;
+    --paper: #f4f7fb;
+    --white: #ffffff;
+    --ink: #1d2a3a;
+    --muted: #5d6b7c;
+    --line: #d5dfeb;
+    --danger: #a8372f;
+    --ok: #2f7d4f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  header {
+    background: linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color: var(--white);
+    text-align: center;
+    padding: 44px 20px 56px;
+    border-bottom: 4px solid var(--gold);
+  }
+  header h1 {
+    font-family: "Libre Baskerville", Georgia, serif;
+    font-weight: 400;
+    font-size: clamp(1.7rem, 4.5vw, 2.6rem);
+    line-height: 1.2;
+    margin: 0 0 10px;
+    letter-spacing: 0.01em;
+  }
+  header .verse {
+    font-family: "Libre Baskerville", Georgia, serif;
+    font-style: italic;
+    color: #cfe0f1;
+    font-size: 1rem;
+    margin: 0;
+  }
+  header .verse small { font-style: normal; color: #9fbad6; font-family: "Source Sans 3", sans-serif; }
+
+  main { max-width: 960px; margin: -30px auto 60px; padding: 0 16px; }
+
+  .panel {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(11, 47, 91, 0.08);
+  }
+  .howto { padding: 16px 20px; margin-bottom: 16px; color: var(--muted); font-size: 0.95rem; }
+  .howto strong { color: var(--navy); }
+
+  .next {
+    display: none;
+    padding: 14px 20px;
+    margin-bottom: 16px;
+    background: var(--sky-soft);
+    border-left: 5px solid var(--sky);
+    border-radius: 10px;
+    color: var(--navy);
+    font-weight: 600;
+  }
+  .next.show { display: block; }
+
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+    padding: 14px 16px; border-bottom: 1px solid var(--line);
+  }
+  .toolbar input[type="search"] { flex: 1 1 200px; }
+  .toolbar label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 0.95rem; cursor: pointer; }
+  #status { margin-left: auto; font-size: 0.9rem; color: var(--muted); min-width: 110px; text-align: right; }
+  #status.saving { color: var(--sky); }
+  #status.saved { color: var(--ok); }
+  #status.error { color: var(--danger); font-weight: 600; }
+
+  input[type="text"], input[type="search"], input[type="date"], textarea {
+    font: inherit; color: inherit;
+    width: 100%;
+    padding: 8px 10px;
+    background: var(--white);
+    border: 1px solid transparent;
+    border-radius: 6px;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+  }
+  input[type="search"] { border-color: var(--line); }
+  td input:hover, td textarea:hover { border-color: var(--line); background: #fbfdff; }
+  input:focus, textarea:focus {
+    outline: none; border-color: var(--sky); background: var(--white);
+    box-shadow: 0 0 0 3px rgba(74, 144, 194, 0.25);
+  }
+  textarea { resize: vertical; min-height: 40px; height: 40px; line-height: 1.35; }
+
+  .tablewrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; padding: 12px 10px;
+    background: var(--navy); color: var(--white);
+    font-weight: 600; font-size: 0.95rem;
+    position: sticky; top: 0; z-index: 1;
+  }
+  th:first-child { padding-left: 16px; }
+  td { padding: 6px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td:first-child { padding-left: 10px; }
+  col.c-date { width: 190px; } col.c-name { width: 220px; } col.c-del { width: 56px; }
+  .dow { display: block; font-size: 0.8rem; color: var(--muted); padding: 0 11px; margin-top: 2px; }
+  tr.past { opacity: 0.55; }
+  tr.upcoming { background: var(--sky-soft); }
+  tr.upcoming td { border-bottom-color: #c3d8ea; }
+  tr.upcoming input, tr.upcoming textarea { background: transparent; }
+  tr.upcoming input:focus, tr.upcoming textarea:focus { background: var(--white); }
+  tr.empty-name input.name { border-color: var(--gold); border-style: dashed; }
+
+  .btn {
+    font: inherit; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--navy); background: var(--navy); color: var(--white);
+    padding: 9px 16px; border-radius: 6px;
+    transition: background .15s;
+  }
+  .btn:hover { background: var(--navy-deep); }
+  .btn:focus-visible, .del:focus-visible { outline: 3px solid rgba(74,144,194,.5); outline-offset: 2px; }
+  .del {
+    font: inherit; font-size: 1.15rem; line-height: 1;
+    background: none; border: 1px solid transparent; color: var(--muted);
+    border-radius: 6px; padding: 8px 10px; cursor: pointer;
+  }
+  .del:hover { color: var(--danger); border-color: var(--danger); }
+
+  .footer-bar { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .footer-bar span { color: var(--muted); font-size: 0.9rem; }
+
+  .message { padding: 32px 20px; text-align: center; color: var(--muted); }
+  .message code { background: var(--sky-soft); padding: 2px 6px; border-radius: 4px; color: var(--navy); }
+
+  @media (max-width: 700px) {
+    table, thead, tbody, tr, td { display: block; width: 100%; }
+    thead { display: none; }
+    tr { padding: 12px 12px 8px; border-bottom: 1px solid var(--line); position: relative; }
+    td { border: none; padding: 3px 0; }
+    td:first-child { padding-left: 0; }
+    td[data-label]::before {
+      content: attr(data-label); display: block;
+      font-size: 0.8rem; color: var(--muted); padding: 0 11px;
+    }
+    td.delcell { position: absolute; top: 8px; right: 8px; width: auto; }
+    .dow { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sunday School Teaching Schedule</h1>
+  <p class="verse">“Teach ye diligently, and my grace shall attend you.” <small>Doctrine and Covenants 88:78</small></p>
+</header>
+
+<main>
+  <div class="panel howto">
+    <strong>How it works:</strong> Click any date, name, or note to edit it. Changes save automatically for everyone.
+    To swap Sundays, trade names between two rows and leave a note such as “Swapped with Brother Smith, he’s on board.”
+    Need a sub? Say so in the notes.
+  </div>
+
+  <div id="next" class="next"></div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Search by name or note" aria-label="Search by name or note">
+      <label><input type="checkbox" id="showPast"> Show past Sundays</label>
+      <div id="status" role="status" aria-live="polite"></div>
+    </div>
+
+    <div class="tablewrap">
+      <table id="table" hidden>
+        <colgroup><col class="c-date"><col class="c-name"><col><col class="c-del"></colgroup>
+        <thead>
+          <tr><th>Date</th><th>Name</th><th>Additional notes</th><th><span class="sr" aria-label="Delete"></span></th></tr>
+        </thead>
+        <tbody id="body"></tbody>
+      </table>
+      <div id="message" class="message">Loading the schedule…</div>
+    </div>
+
+    <div class="footer-bar">
+      <span id="count"></span>
+      <button class="btn" id="addBtn" type="button">Add a Sunday</button>
+    </div>
+  </div>
+</main>
+
+<script>
+// ============ SETUP: paste your Google Apps Script Web app URL here ============
+const API_URL = "https://script.google.com/macros/s/AKfycbxp3Jzn0GV1CYOtF8rvxHg8lRAMvKnRlbluiDlnylZYXR4KkzuwIXMF3KqG3napAh86/exec";
+// ================================================================================
+
+const $ = id => document.getElementById(id);
+let rows = [];
+let pending = 0;
+const timers = {};
+
+function todayISO() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function parseISO(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || "");
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+}
+function fmtLong(s) {
+  const d = parseISO(s);
+  return d ? d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" }) : "";
+}
+function dow(s) {
+  const d = parseISO(s);
+  return d ? d.toLocaleDateString(undefined, { weekday: "long" }) : "";
+}
+function sortRows() {
+  rows.sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999"));
+}
+
+function setStatus(text, cls) {
+  const el = $("status");
+  el.textContent = text;
+  el.className = cls || "";
+}
+
+async function api(payload) {
+  const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "Save failed");
+  return data;
+}
+
+async function save(payload) {
+  pending++;
+  setStatus("Saving…", "saving");
+  try {
+    const data = await api(payload);
+    pending--;
+    if (pending === 0) setStatus("All changes saved", "saved");
+    return data;
+  } catch (err) {
+    pending--;
+    setStatus("Not saved. Check your connection and try again.", "error");
+    throw err;
+  }
+}
+
+async function load(initial) {
+  try {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    rows = data.rows;
+    sortRows();
+    render();
+    if (initial) setStatus("");
+  } catch (err) {
+    if (initial) {
+      $("message").hidden = false;
+      $("table").hidden = true;
+      $("message").textContent = "The schedule could not be loaded. Check that the Web app URL in index.html is correct and that access is set to “Anyone.”";
+    } else {
+      setStatus("Could not refresh", "error");
+    }
+  }
+}
+
+function showNext() {
+  const t = todayISO();
+  const next = rows.find(r => r.date >= t);
+  const box = $("next");
+  if (!next) { box.classList.remove("show"); return; }
+  const who = next.name ? next.name : "no one yet. We need a teacher!";
+  box.textContent = "This week, " + fmtLong(next.date) + ": " + who;
+  box.classList.add("show");
+}
+
+function render() {
+  const t = todayISO();
+  const q = $("search").value.trim().toLowerCase();
+  const showPast = $("showPast").checked;
+  const body = $("body");
+  body.innerHTML = "";
+  const nextId = (rows.find(r => r.date >= t) || {}).id;
+  let shown = 0;
+
+  rows.forEach(r => {
+    const past = r.date && r.date < t;
+    if (past && !showPast) return;
+    if (q && !((r.name + " " + r.notes).toLowerCase().includes(q))) return;
+    shown++;
+
+    const tr = document.createElement("tr");
+    tr.dataset.id = r.id;
+    if (past) tr.classList.add("past");
+    if (r.id === nextId) tr.classList.add("upcoming");
+    if (!r.name) tr.classList.add("empty-name");
+
+    const tdDate = document.createElement("td");
+    tdDate.dataset.label = "Date";
+    const date = document.createElement("input");
+    date.type = "date"; date.value = r.date; date.setAttribute("aria-label", "Date");
+    const dw = document.createElement("span");
+    dw.className = "dow"; dw.textContent = dow(r.date);
+    tdDate.append(date, dw);
+
+    const tdName = document.createElement("td");
+    tdName.dataset.label = "Name";
+    const name = document.createElement("input");
+    name.type = "text"; name.className = "name"; name.value = r.name;
+    name.placeholder = "Open. Add your name"; name.setAttribute("aria-label", "Name");
+    tdName.append(name);
+
+    const tdNotes = document.createElement("td");
+    tdNotes.dataset.label = "Additional notes";
+    const notes = document.createElement("textarea");
+    notes.value = r.notes; notes.rows = 1;
+    notes.placeholder = "Need a sub? Swapped with someone? Note it here.";
+    notes.setAttribute("aria-label", "Additional notes");
+    tdNotes.append(notes);
+
+    const tdDel = document.createElement("td");
+    tdDel.className = "delcell";
+    const del = document.createElement("button");
+    del.type = "button"; del.className = "del"; del.title = "Delete this row";
+    del.setAttribute("aria-label", "Delete this row"); del.textContent = "✕";
+    tdDel.append(del);
+
+    tr.append(tdDate, tdName, tdNotes, tdDel);
+    body.append(tr);
+
+    bind(r, "date", date, tr, dw);
+    bind(r, "name", name, tr);
+    bind(r, "notes", notes, tr);
+    del.addEventListener("click", () => removeRow(r));
+  });
+
+  const hasRows = shown > 0;
+  $("table").hidden = !hasRows;
+  $("message").hidden = hasRows;
+  if (!hasRows) {
+    $("message").textContent = q ? "No rows match your search." : "No upcoming Sundays. Click “Add a Sunday” to add one.";
+  }
+  $("count").textContent = shown + (shown === 1 ? " Sunday shown" : " Sundays shown");
+  showNext();
+}
+
+function bind(r, field, el, tr, dowEl) {
+  el.addEventListener("input", () => {
+    r[field] = el.value;
+    if (field === "name") tr.classList.toggle("empty-name", !el.value.trim());
+    if (field === "date" && dowEl) dowEl.textContent = dow(el.value);
+    const key = r.id + field;
+    if (timers[key]) clearTimeout(timers[key]); else pending++;
+    setStatus("Saving…", "saving");
+    timers[key] = setTimeout(async () => {
+      timers[key] = null;
+      pending--;
+      try { await save({ action: "update", id: r.id, field: field, value: el.value }); } catch (e) {}
+    }, 700);
+  });
+  el.addEventListener("change", () => {
+    if (field === "date") { sortRows(); setTimeout(render, 800); }
+  });
+}
+
+async function removeRow(r) {
+  const label = r.date ? fmtLong(r.date) : "this row";
+  if (!confirm("Delete " + label + (r.name ? " (" + r.name + ")" : "") + "?")) return;
+  rows = rows.filter(x => x.id !== r.id);
+  render();
+  try { await save({ action: "delete", id: r.id }); } catch (e) { load(false); }
+}
+
+async function addRow() {
+  let next = new Date();
+  const last = rows.length ? parseISO(rows[rows.length - 1].date) : null;
+  if (last) { next = new Date(last); next.setDate(next.getDate() + 7); }
+  else { next.setDate(next.getDate() + ((7 - next.getDay()) % 7)); }
+  const iso = next.getFullYear() + "-" + String(next.getMonth() + 1).padStart(2, "0") + "-" + String(next.getDate()).padStart(2, "0");
+  try {
+    const data = await save({ action: "add", date: iso, name: "", notes: "" });
+    rows.push({ id: data.id, date: iso, name: "", notes: "" });
+    sortRows();
+    render();
+    const tr = document.querySelector('tr[data-id="' + data.id + '"]');
+    if (tr) { tr.scrollIntoView({ block: "center" }); tr.querySelector(".name").focus(); }
+  } catch (e) {}
+}
+
+$("addBtn").addEventListener("click", addRow);
+$("search").addEventListener("input", render);
+$("showPast").addEventListener("change", render);
+
+// Refresh every 45 seconds so you see other teachers' changes, but never while someone is typing.
+setInterval(() => {
+  const a = document.activeElement;
+  const typing = a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA") && a.closest("tbody");
+  if (pending === 0 && !typing && !document.hidden) load(false);
+}, 45000);
+
+if (API_URL.startsWith("PASTE_")) {
+  $("message").innerHTML = "Almost there. Paste your Google Apps Script Web app URL into <code>API_URL</code> near the bottom of this file.";
+} else {
+  load(true);
+}
+</script>
+</body>
+</html>
